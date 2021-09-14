@@ -5,11 +5,17 @@ const AWS = require('aws-sdk');
 
 let cachedDb = null;
 
-// Fetch Mongo credentials
+/*
+ * Instantiate Secrets Manager
+ */
+
 const sm = new AWS.SecretsManager({
   region: "us-east-1"
 });
 
+/* 
+ * Generic method for retrieving secrets from Secret Manager
+ */
 const getSecrets = async (SecretId) => {
   return await new Promise((resolve, reject) => {
     sm.getSecretValue( { SecretId }, (err, result) => {
@@ -19,13 +25,19 @@ const getSecrets = async (SecretId) => {
   })
 }
 
+/* 
+ * Fetch MongoDB credentials, specifically
+ */
 const getMongoCredentials = async (event) => {
   const { mongoUri, mongoUser, mongoPass } = await getSecrets('mongoCredentials');
-
   return [ mongoUri, mongoUser, mongoPass];
 }
 
+/*
+ * Core function for connecting to database
+ */
 async function connectToDatabase() {
+  
   // If already connected, return 
   if (cachedDb) {
     return cachedDb;
@@ -37,12 +49,16 @@ async function connectToDatabase() {
   const client = new MongoClient(uri);
   await client.connect();
  
-  // Use database, cache, and return
+  // Select database, cache, and return
   const db = await client.db("data");
   cachedDb = db;
   return db;
+
 }
 
+/* 
+ * Retrieve home value and rental data from database
+ */
 const fetchData = async() => {
   const db = await connectToDatabase();
 
@@ -52,6 +68,9 @@ const fetchData = async() => {
   return all;
 }
 
+/*
+ * Main Lambda handler function
+ */
 module.exports.getData = async (event) => {
   const data = await fetchData();
 
