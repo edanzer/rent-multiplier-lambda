@@ -8,7 +8,6 @@ let cachedDb = null;
 /*
  * Instantiate Secrets Manager
  */
-
 const sm = new AWS.SecretsManager({
   region: "us-east-1"
 });
@@ -19,10 +18,10 @@ const sm = new AWS.SecretsManager({
 const getSecrets = async (SecretId) => {
   return await new Promise((resolve, reject) => {
     sm.getSecretValue( { SecretId }, (err, result) => {
-      if(err) resolve(err); 
+      if(err) reject(err); 
       if(result) resolve(JSON.parse(result.SecretString));
-    })
-  })
+    });
+  });
 }
 
 /* 
@@ -30,7 +29,7 @@ const getSecrets = async (SecretId) => {
  */
 const getMongoCredentials = async (event) => {
   const { mongoUri, mongoUser, mongoPass } = await getSecrets('mongoCredentials');
-  return [ mongoUri, mongoUser, mongoPass];
+  return [ mongoUri, mongoUser, mongoPass ];
 }
 
 /*
@@ -59,7 +58,7 @@ async function connectToDatabase() {
 /* 
  * Retrieve home value and rental data from database
  */
-const fetchData = async() => {
+const retrievePrices = async() => {
   const db = await connectToDatabase();
 
   const prices = db.collection("prices");
@@ -72,7 +71,7 @@ const fetchData = async() => {
  * Main Lambda handler function
  */
 module.exports.getData = async (event) => {
-  const data = await fetchData();
+  const data = await retrievePrices();
 
   return {
     statusCode: 200,
